@@ -15,7 +15,7 @@ func main() {
 
 	// Creates the DBConfiguration for the connection pool
 	dbCfg := db.DBConfig{
-		Addr:         env.GetString("DB_ADDR", "postgres://postgres:admin@localhost:5432/social_go?sslmode=disable"),
+		Addr:         env.GetString("DB_ADDR", ""),
 		MaxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
 		MaxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 		MaxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
