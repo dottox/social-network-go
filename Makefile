@@ -24,3 +24,7 @@ migrate-version:
 .PHONE: migrate-drop
 migrate-drop:
 	@migrate --path=$(MIGRATIONS_PATH) --database="$(DB_ADDR)" drop $(filter-out $@,$(MAKECMDGOALS))
+
+.PHONY: seed
+seed:
+	@go run cmd/migrate/seed/main.go

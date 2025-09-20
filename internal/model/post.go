@@ -8,6 +8,7 @@ type Post struct {
 	Tags          []string `json:"tags"`
 	CreatedAt     string   `json:"created_at"`
 	UpdatedAt     string   `json:"updated_at"`
+	Version       uint16   `json:"version"`
 	CommentsCount uint16   `json:"comments_count"`
 }
 
@@ -18,7 +19,6 @@ type CreatePostPayload struct {
 }
 
 type UpdatePostPayload struct {
-	Title   string   `json:"title" validate:"max=100"`
-	Content string   `json:"content" validate:"max=1000"`
-	Tags    []string `json:"tags"`
+	Title   *string `json:"title" validate:"omitempty,max=100"`
+	Content *string `json:"content" validate:"omitempty,max=1000"`
 }

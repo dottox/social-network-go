@@ -1,0 +1,65 @@
+## Test Health Check Endpoint
+GET http://localhost:8080/v1/health
+Accept: application/json
+
+## ---------- USERS -----------
+
+### Create a new user, with generated values
+POST http://localhost:8080/v1/users
+Content-Type: application/json
+
+{
+    "username": "user_{{$random.company.name}}",
+    "email": "{{$random.email}}",
+    "password": "Password123!"
+}
+
+### Get user by ID
+GET http://localhost:8080/v1/users/5
+Accept: application/json
+
+
+## --------- POSTS -----------
+
+### Create a new post, with generated values
+POST http://localhost:8080/v1/posts
+Content-Type: application/json
+
+{
+    "title": "Post Title {{$random.integer()}}",
+    "content": "{{$random.company.catchPhrase}}",
+    "tags": ["tag{{$random.integer()}}"]
+}
+
+### Get post by ID
+GET http://localhost:8080/v1/posts/5
+Accept: application/json
+
+### Update post by ID
+PATCH http://localhost:8080/v1/posts/5
+Content-Type: application/json
+
+{
+    "title": "Updated Post Title {{$random.integer()}}",
+    "content": "Updated content {{$random.company.catchPhrase}}"
+}
+
+### Delete post by ID
+DELETE http://localhost:8080/v1/posts/6
+Accept: application/json
+
+
+## -------- COMMENTS -----------
+
+### Create a new comment, with generated values
+POST http://localhost:8080/v1/posts/5/comments
+Content-Type: application/json
+
+{
+    "content": "{{$random.shakespeare.hamletQuote}}"
+}
+
+### Get all comments for a post
+GET http://localhost:8080/v1/posts/5/comments
+Accept: application/json
+

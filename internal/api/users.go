@@ -37,7 +37,7 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Write the response back to the user, with the http.StatusCreated.
-	if err := writeJSON(w, http.StatusCreated, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

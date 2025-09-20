@@ -18,6 +18,9 @@ const postCtx postKey = "post"
 // Handler to create a new post
 func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 
+	// Get the request context
+	ctx := r.Context()
+
 	// Took the payload from the request body
 	// The payload will be a minimal Post model
 	var payload model.CreatePostPayload
@@ -26,6 +29,7 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Validate the struct of the payload
 	if err := Validate.Struct(payload); err != nil {
 		app.badRequestError(w, r, err)
 		return
@@ -46,9 +50,6 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 		UserId: 1,
 	}
 
-	// Get the request context
-	ctx := r.Context()
-
 	// Create the new post in the repository
 	// Basically inserting in the database
 	// post will be populated with the variable created at runtime: id, created_at, updated_at
@@ -59,7 +60,7 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Write the response back to the user, with the http.StatusCreated.
-	if err := writeJSON(w, http.StatusCreated, post); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -68,10 +69,11 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the post from the context
-	post := getPostFromCtx(r)
+	ctx := r.Context()
+	post := getPostFromCtx(ctx)
 
 	// Write the post in JSON for the response
-	if err := writeJSON(w, http.StatusOK, post); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -80,7 +82,9 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 // Handler to update a post by their Id
 func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 
-	post := getPostFromCtx(r)
+	// Get the request context
+	ctx := r.Context()
+	post := getPostFromCtx(ctx)
 
 	// Took the payload from the request body
 	// The payload will be a minimal Post model
@@ -90,33 +94,28 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Check if at least one field is provided
-	if (payload.Title == "") && (payload.Content == "") && (payload.Tags == nil) {
-		app.badRequestError(w, r, errors.New("at least one field must be provided to update the post"))
-		return
-	}
-
 	// Validate the payload
 	if err := Validate.Struct(payload); err != nil {
 		app.badRequestError(w, r, err)
 		return
 	}
 
-	// Create the new post if the payload had no errors
-	newPost := &model.Post{
-		Id:      uint32(post.Id),
-		Title:   payload.Title,
-		Content: payload.Content,
-		Tags:    payload.Tags,
-		// TODO: Change after auth
-		UserId: 1,
+	// Check if at least one field is provided
+	if (payload.Title == nil) && (payload.Content == nil) {
+		app.badRequestError(w, r, errors.New("at least one field must be provided to update the post"))
+		return
 	}
 
-	// Get the request context
-	ctx := r.Context()
+	// Update the post fields if they are provided in the payload
+	if payload.Title != nil {
+		post.Title = *payload.Title
+	}
+	if payload.Content != nil {
+		post.Content = *payload.Content
+	}
 
 	// Update the Post by Id in the repository
-	updatedPost, err := app.Store.Posts.Update(ctx, newPost)
+	err := app.Store.Posts.Update(ctx, post)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrResourceNotFound):
@@ -129,7 +128,7 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Write the post in JSON for the response
-	if err := writeJSON(w, http.StatusOK, updatedPost); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -137,13 +136,12 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 
 func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
 
-	post := getPostFromCtx(r)
-
 	// Get the request context
 	ctx := r.Context()
+	post := getPostFromCtx(ctx)
 
 	// Delete the Post by Id in the repository
-	deletedPost, err := app.Store.Posts.DeleteById(ctx, post.Id)
+	err := app.Store.Posts.DeleteById(ctx, post.Id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrResourceNotFound):
@@ -156,7 +154,7 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Write the post in JSON for the response
-	if err := writeJSON(w, http.StatusOK, deletedPost); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -165,15 +163,15 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 func (app *Application) postsContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		// Get the request context
+		ctx := r.Context()
+
 		idParam := chi.URLParam(r, "postId")
 		id, err := strconv.ParseUint(idParam, 10, 32)
 		if err != nil {
 			app.badRequestError(w, r, err)
 			return
 		}
-
-		// Get the request context
-		ctx := r.Context()
 
 		// Get the Post by Id in the repository
 		post, err := app.Store.Posts.GetById(ctx, uint32(id))
@@ -193,7 +191,7 @@ func (app *Application) postsContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getPostFromCtx(r *http.Request) *model.Post {
-	post, _ := r.Context().Value(postCtx).(*model.Post)
+func getPostFromCtx(ctx context.Context) *model.Post {
+	post, _ := ctx.Value(postCtx).(*model.Post)
 	return post
 }

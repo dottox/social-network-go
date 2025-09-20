@@ -23,6 +23,9 @@ func (s *CommentStore) Create(ctx context.Context, comment *model.Comment) error
 		VALUES ($1, $2, $3) RETURNING id, created_at
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
 	// Send the query with the context and arguments
 	err = s.db.QueryRowContext(
 		ctx,
@@ -72,6 +75,9 @@ func (s *CommentStore) GetAllByPostId(ctx context.Context, postId uint32) ([]*mo
 		FROM comments
 		WHERE post_id = $1
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	// Perform the query with the ctx and id
 	// Scan all the data to the blank comment

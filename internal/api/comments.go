@@ -57,7 +57,7 @@ func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Write the response back to the user, with the http.StatusCreated.
-	if err := writeJSON(w, http.StatusCreated, comment); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, comment); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -90,7 +90,7 @@ func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.
 	}
 
 	// Write the post in JSON for the response
-	if err := writeJSON(w, http.StatusOK, comments); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, comments); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
