@@ -11,6 +11,20 @@ import (
 )
 
 // Handler to create a new comment
+//
+//	@Summary		Create a new comment for a post
+//	@Description	Create a new comment for a post with the given information
+//	@Tags			comments
+//	@Accept			json
+//	@Produce		json
+//	@Param			postId	path		int							true	"Post ID"
+//	@Param			comment	body		model.CreateCommentPayload	true	"Comment payload"
+//	@Success		201		{object}	model.Comment
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId}/comments [post]
 func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the postId param
@@ -64,6 +78,18 @@ func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 }
 
 // Function to return a post by their Id
+//
+//	@Summary		Get comments for a post
+//	@Description	Get all comments for a specific post by the post ID
+//	@Tags			comments
+//	@Produce		json
+//	@Param			postId	path		int	true	"Post ID"
+//	@Success		200		{array}		model.Comment
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId}/comments [get]
 func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	idParam := chi.URLParam(r, "postId")

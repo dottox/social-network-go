@@ -1,12 +1,11 @@
 package api
 
 import (
-	"log"
 	"net/http"
 )
 
 func (app *Application) logError(errorName string, r *http.Request, err error) {
-	log.Printf("%s: %s\n  call: %s %s", errorName, err, r.Method, r.URL.Path)
+	app.Logger.Errorw("error occurred", "error", err, "type", errorName, "method", r.Method, "url", r.URL.String())
 }
 
 func (app *Application) internalServerError(w http.ResponseWriter, r *http.Request, err error) {

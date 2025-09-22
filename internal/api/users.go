@@ -15,7 +15,17 @@ type userKey string
 
 const userCtx userKey = "user"
 
-// Handler to create a new user
+// @Summary		Create a new user
+// @Description	Create a new user with the given information
+// @Tags			users
+// @Accept			json
+// @Produce		json
+// @Param			user	body		model.CreateUserPayload	true	"User payload"
+// @Success		201		{object}	model.User
+// @Failure		400		{object}	error
+// @Failure		500		{object}	error
+// @Security		ApiKeyAuth
+// @Router			/users [post]
 func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Took the payload from the request body
@@ -52,6 +62,17 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// @Summary		Get a user by ID
+// @Description	Get a user by their ID
+// @Tags			users
+// @Produce		json
+// @Param			userId	path		int	true	"User ID"
+// @Success		200		{object}	model.User
+// @Failure		400		{object}	error
+// @Failure		404		{object}	error
+// @Failure		500		{object}	error
+// @Security		ApiKeyAuth
+// @Router			/users/{userId} [get]
 func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r.Context())
@@ -62,6 +83,17 @@ func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary		Follow a user
+// @Description	Follow a user by their ID
+// @Tags			users
+// @Param			userId	path	int	true	"User ID"
+// @Success		204
+// @Failure		400	{object}	error
+// @Failure		404	{object}	error
+// @Failure		409	{object}	error
+// @Failure		500	{object}	error
+// @Security		ApiKeyAuth
+// @Router			/users/{userId}/follow [put]
 func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
@@ -96,6 +128,16 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// @Summary		Unfollow a user
+// @Description	Unfollow a user by their ID
+// @Tags			users
+// @Param			userId	path	int	true	"User ID"
+// @Success		204
+// @Failure		400	{object}	error
+// @Failure		404	{object}	error
+// @Failure		500	{object}	error
+// @Security		ApiKeyAuth
+// @Router			/users/{userId}/unfollow [put]
 func (app *Application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()

@@ -1,26 +1,32 @@
 package api
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/dottox/social/docs"
 	"github.com/dottox/social/internal/db"
 	"github.com/dottox/social/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"go.uber.org/zap"
 )
 
 type Application struct {
 	Config Config
 	Store  store.Storage
+	Logger *zap.SugaredLogger
 }
 
 type Config struct {
-	Addr    string
-	Env     string
-	Version string
-	DB      db.DBConfig
+	Protocol string
+	Addr     string
+	Port     string
+	Env      string
+	Version  string
+	DB       db.DBConfig
 }
 
 // Mount functions allow the app to create their router
@@ -40,6 +46,8 @@ func (app *Application) Mount() http.Handler {
 
 	// Timeout for the middlewares
 	r.Use(middleware.Timeout(60 * time.Second))
+	docsURL := fmt.Sprintf("%s://%s%s/swagger/doc.json", app.Config.Protocol, app.Config.Addr, app.Config.Port)
+	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 	// Define routes, you can have subroutes
 	r.Route("/v1", func(r chi.Router) {
@@ -83,16 +91,21 @@ func (app *Application) Mount() http.Handler {
 // Run function allow to create and run the server
 func (app *Application) Run(mux http.Handler) error {
 
+	// docs
+	docs.SwaggerInfo.Version = app.Config.Version
+	docs.SwaggerInfo.Host = app.Config.Addr + app.Config.Port
+	docs.SwaggerInfo.BasePath = "/v1"
+
 	// creates the server with the application config
 	srv := &http.Server{
-		Addr:         app.Config.Addr,
+		Addr:         app.Config.Addr + app.Config.Port,
 		Handler:      mux,
 		WriteTimeout: 30 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("starting server on %s", app.Config.Addr)
+	app.Logger.Infow("starting server", "protocol", app.Config.Protocol, "addr", srv.Addr, "env", app.Config.Env)
 
 	// start the server
 	return srv.ListenAndServe()

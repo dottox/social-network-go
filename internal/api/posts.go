@@ -15,7 +15,17 @@ type postKey string
 
 const postCtx postKey = "post"
 
-// Handler to create a new post
+// @Summary		Create a new post
+// @Description	Create a new post with the given information
+// @Tags			posts
+// @Accept			json
+// @Produce		json
+// @Param			post	body		model.CreatePostPayload	true	"Post payload"
+// @Success		201		{object}	model.Post
+// @Failure		400		{object}	error
+// @Failure		500		{object}	error
+// @Security		ApiKeyAuth
+// @Router			/posts [post]
 func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the request context
@@ -66,6 +76,19 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// Handler to get a post by their Id
+//
+//	@Summary		Get a post by ID
+//	@Description	Get a post by their ID
+//	@Tags			posts
+//	@Produce		json
+//	@Param			postId	path		int	true	"Post ID"
+//	@Success		200		{object}	model.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId} [get]
 func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the post from the context
@@ -80,6 +103,20 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handler to update a post by their Id
+//
+//	@Summary		Update a post by ID
+//	@Description	Update a post by their ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postId	path		int						true	"Post ID"
+//	@Param			post	body		model.UpdatePostPayload	true	"Post payload"
+//	@Success		200		{object}	model.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId} [patch]
 func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the request context
@@ -134,6 +171,19 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// Handler to delete a post by their Id
+//
+//	@Summary		Delete a post by ID
+//	@Description	Delete a post by their ID
+//	@Tags			posts
+//	@Produce		json
+//	@Param			postId	path		int	true	"Post ID"
+//	@Success		200		{object}	model.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{postId} [delete]
 func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the request context

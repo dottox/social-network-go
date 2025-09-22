@@ -32,3 +32,7 @@ force-version:
 .PHONY: seed
 seed:
 	@go run cmd/migrate/seed/main.go
+
+.PHONY: gen-docs
+gen-docs:
+	@swag init -g ./main.go -d cmd,internal/api,internal/db,internal/model,internal/store,internal/env && swag fmt

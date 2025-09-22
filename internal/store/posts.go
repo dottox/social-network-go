@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/dottox/social/internal/model"
 	"github.com/lib/pq"
@@ -155,8 +154,6 @@ func (s *PostStore) DeleteById(ctx context.Context, id uint32) error {
 }
 
 func (s *PostStore) GetUserFeed(ctx context.Context, userId uint32, fq PaginatedFeedQuery) ([]*model.Post, error) {
-
-	fmt.Printf("Paginated feed query params: %+v\n", fq)
 
 	query := `
 		SELECT DISTINCT p.id, p.title, p.content, p.user_id, p.tags, p.created_at, p.updated_at, p.comments_count, p.version
