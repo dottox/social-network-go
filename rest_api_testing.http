@@ -4,16 +4,6 @@ Accept: application/json
 
 ## ---------- USERS -----------
 
-### Create a new user, with generated values
-POST http://localhost:8080/v1/users
-Content-Type: application/json
-
-{
-    "username": "user_{{$random.company.name}}",
-    "email": "{{$random.email}}",
-    "password": "Password123!"
-}
-
 ### Get user by ID
 GET http://localhost:8080/v1/users/5
 Accept: application/json
@@ -63,3 +53,19 @@ Content-Type: application/json
 GET http://localhost:8080/v1/posts/5/comments
 Accept: application/json
 
+
+## -------- FOLLOWERS -----------
+
+### Follow a user
+PUT http://localhost:8080/v1/users/5/follow
+Content-Type: application/json
+
+### Unfollow a user
+PUT http://localhost:8080/v1/users/5/unfollow
+Content-Type: application/json
+
+## -------- FEED -----------
+
+### Get user feed
+GET http://localhost:8080/v1/users/feed?limit=25&offset=0&search=cMY&tags=EGSd
+Accept: application/json

@@ -1,10 +1,19 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/dottox/social/internal/model"
+	"github.com/dottox/social/internal/store"
+	"github.com/go-chi/chi/v5"
 )
+
+type userKey string
+
+const userCtx userKey = "user"
 
 // Handler to create a new user
 func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,4 +50,112 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	user := getUserFromCtx(r.Context())
+
+	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	targetUser := getUserFromCtx(ctx)
+
+	// TODO: get this users from auth later
+	var followerUser uint32 = 1
+
+	followAction := &model.FollowAction{
+		TargetUserId: targetUser.Id,
+		SenderUserId: followerUser,
+	}
+
+	err := app.Store.Followers.Follow(ctx, followAction)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrResourceNotFound):
+			app.resourceNotFoundError(w, r, err)
+			return
+		case errors.Is(err, store.ErrResourceAlreadyExists):
+			app.resourceAlreadyExists(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *Application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	targetUser := getUserFromCtx(ctx)
+
+	// TODO: get this users from auth later
+	var unfollowerUser uint32 = 1
+
+	followAction := &model.FollowAction{
+		TargetUserId: targetUser.Id,
+		SenderUserId: unfollowerUser,
+	}
+
+	err := app.Store.Followers.Unfollow(ctx, followAction)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrResourceNotFound):
+			app.resourceNotFoundError(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *Application) userContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+
+		userId, err := strconv.ParseUint(chi.URLParam(r, "userId"), 10, 32)
+		if err != nil {
+			app.badRequestError(w, r, err)
+			return
+		}
+
+		user, err := app.Store.Users.GetById(ctx, uint32(userId))
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrResourceNotFound):
+				app.resourceNotFoundError(w, r, err)
+				return
+			default:
+				app.internalServerError(w, r, err)
+				return
+			}
+		}
+
+		ctx = context.WithValue(ctx, userCtx, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getUserFromCtx(ctx context.Context) *model.User {
+	user, _ := ctx.Value(userCtx).(*model.User)
+	return user
 }

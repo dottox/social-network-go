@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	USER_COUNT    = 100
-	POST_COUNT    = 200
-	COMMENT_COUNT = 500
+	USER_COUNT     = 100
+	POST_COUNT     = 200
+	COMMENT_COUNT  = 500
+	FOLLOWER_COUNT = 200
 )
 
 func Seed(store store.Storage) error {
@@ -56,6 +57,19 @@ func Seed(store store.Storage) error {
 
 	}
 	log.Print("seeded comments correctly")
+
+	log.Printf("seeding %d followers", FOLLOWER_COUNT)
+	followActions := generateFollowers(FOLLOWER_COUNT, users)
+	for _, followAction := range followActions {
+		if err := store.Followers.Follow(ctx, followAction); err != nil {
+			log.Printf("failed to follow: %v", err)
+			return err
+		}
+
+		fmt.Printf("Seeded follower: %+v\n", followAction)
+
+	}
+	log.Print("seeded followers correctly")
 
 	log.Print("seeded completed!")
 	return nil
@@ -101,11 +115,23 @@ func generateComments(count int, users []*model.User, posts []*model.Post) []*mo
 			PostId:  posts[rand.Intn(len(posts))].Id,
 			Content: generateRandomString(30),
 		}
-		time.Sleep(time.Nanosecond) // ensure different seeds
 
 	}
 
 	return comments
+}
+
+func generateFollowers(count int, users []*model.User) []*model.FollowAction {
+	followers := make([]*model.FollowAction, count)
+	for i := 0; i < count; i++ {
+		followers[i] = &model.FollowAction{
+			TargetUserId: users[rand.Intn(len(users))].Id,
+			SenderUserId: users[rand.Intn(len(users))].Id,
+			CreatedAt:    time.Now().String(),
+		}
+	}
+
+	return followers
 }
 
 func generateRandomString(length int) string {

@@ -26,3 +26,9 @@ func (app *Application) resourceNotFoundError(w http.ResponseWriter, r *http.Req
 
 	writeJSONError(w, http.StatusNotFound, "resource not found")
 }
+
+func (app *Application) resourceAlreadyExists(w http.ResponseWriter, r *http.Request, err error) {
+	app.logError("resource already exists", r, err)
+
+	writeJSONError(w, http.StatusConflict, "resource already exists")
+}

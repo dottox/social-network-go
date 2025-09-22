@@ -47,7 +47,7 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 		Content: payload.Content,
 		Tags:    payload.Tags,
 		// Change after auth
-		UserId: 1,
+		UserId: 24,
 	}
 
 	// Create the new post in the repository

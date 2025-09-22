@@ -17,13 +17,17 @@ migrate-up:
 migrate-down:
 	@migrate --path=$(MIGRATIONS_PATH) --database="$(DB_ADDR)" down $(filter-out $@,$(MAKECMDGOALS))
 
-.PHONE: migrate-version
+.PHONY: migrate-version
 migrate-version:
 	@migrate --path=$(MIGRATIONS_PATH) --database="$(DB_ADDR)" version
 
-.PHONE: migrate-drop
+.PHONY: migrate-drop
 migrate-drop:
 	@migrate --path=$(MIGRATIONS_PATH) --database="$(DB_ADDR)" drop $(filter-out $@,$(MAKECMDGOALS))
+
+.PHONY: force-version
+force-version:
+	@migrate --path=$(MIGRATIONS_PATH) --database="$(DB_ADDR)" force $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: seed
 seed:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/dottox/social/internal/model"
 	"github.com/lib/pq"
@@ -19,7 +20,7 @@ func (s *PostStore) Create(ctx context.Context, post *model.Post) error {
 		INSERT INTO posts (title, content, user_id, tags)
 		VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at, version
 	`
-	
+
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
@@ -151,6 +152,73 @@ func (s *PostStore) DeleteById(ctx context.Context, id uint32) error {
 
 	// Return no errors
 	return nil
+}
+
+func (s *PostStore) GetUserFeed(ctx context.Context, userId uint32, fq PaginatedFeedQuery) ([]*model.Post, error) {
+
+	fmt.Printf("Paginated feed query params: %+v\n", fq)
+
+	query := `
+		SELECT DISTINCT p.id, p.title, p.content, p.user_id, p.tags, p.created_at, p.updated_at, p.comments_count, p.version
+		FROM posts p
+		JOIN followers f ON p.user_id = f.user_id
+		WHERE 
+		    (f.follower_id = $1 OR p.user_id = $1) AND
+		    (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%') AND
+		    (p.tags @> $5 OR $5 = '{}')
+		ORDER BY p.created_at ` + fq.Sort + `
+		LIMIT $2 OFFSET $3
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	// Create a new list of posts
+	posts := []*model.Post{}
+
+	// Perform the query with the ctx and id
+	// Scan all the data to the blank post
+	rows, err := s.db.QueryContext(
+		ctx,
+		query,
+		userId,
+		fq.Limit,
+		fq.Offset,
+		fq.Search,
+		pq.Array(fq.Tags),
+	)
+	if err != nil {
+		switch {
+		// If no rows found, return a ErrResourceNotFound
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrResourceNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		post := &model.Post{}
+		err := rows.Scan(
+			&post.Id,
+			&post.Title,
+			&post.Content,
+			&post.UserId,
+			pq.Array(&post.Tags), // note: tags is a slice, so use pq.Array())
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&post.CommentsCount,
+			&post.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }
 
 func postExists(ctx context.Context, db *sql.DB, postId uint32) (bool, error) {
