@@ -159,7 +159,9 @@ func (s *PostStore) GetUserFeed(ctx context.Context, userId uint32, fq Paginated
 		SELECT DISTINCT p.id, p.title, p.content, p.user_id, p.tags, p.created_at, p.updated_at, p.comments_count, p.version
 		FROM posts p
 		JOIN followers f ON p.user_id = f.user_id
+		JOIN users u ON p.user_id = u.id
 		WHERE 
+			(u.is_active = true) AND
 		    (f.follower_id = $1 OR p.user_id = $1) AND
 		    (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%') AND
 		    (p.tags @> $5 OR $5 = '{}')

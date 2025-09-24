@@ -24,7 +24,7 @@ const postCtx postKey = "post"
 // @Success		201		{object}	model.Post
 // @Failure		400		{object}	error
 // @Failure		500		{object}	error
-// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/posts [post]
 func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -87,7 +87,7 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 //	@Failure		400		{object}	error
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
 //	@Router			/posts/{postId} [get]
 func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -115,7 +115,7 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400		{object}	error
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
 //	@Router			/posts/{postId} [patch]
 func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -182,7 +182,7 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 //	@Failure		400		{object}	error
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
 //	@Router			/posts/{postId} [delete]
 func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
 

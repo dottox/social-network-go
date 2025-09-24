@@ -1,0 +1,4 @@
+ALTER TABLE
+    user_invitations
+ADD
+    COLUMN expires_at TIMESTAMP(0) WITH TIME ZONE NOT NULL;

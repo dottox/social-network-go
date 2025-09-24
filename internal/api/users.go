@@ -13,54 +13,8 @@ import (
 
 type userKey string
 
-const userCtx userKey = "user"
-
-// @Summary		Create a new user
-// @Description	Create a new user with the given information
-// @Tags			users
-// @Accept			json
-// @Produce		json
-// @Param			user	body		model.CreateUserPayload	true	"User payload"
-// @Success		201		{object}	model.User
-// @Failure		400		{object}	error
-// @Failure		500		{object}	error
-// @Security		ApiKeyAuth
-// @Router			/users [post]
-func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request) {
-
-	// Took the payload from the request body
-	// The payload will be a minimal User model
-	var payload model.CreateUserPayload
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestError(w, r, err)
-		return
-	}
-
-	// Create the new user if the payload had no errors
-	user := &model.User{
-		Username: payload.Username,
-		Password: payload.Password,
-		Email:    payload.Email,
-	}
-
-	// Get the request context
-	ctx := r.Context()
-
-	// Create the new user in the repository
-	// Basically inserting it in the database
-	// user will be populated with the variable created at runtime: id & created_at
-	if err := app.Store.Users.Create(ctx, user); err != nil {
-		// We can switch here depending on the err to retrieve errors correctly
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	// Write the response back to the user, with the http.StatusCreated.
-	if err := app.jsonResponse(w, http.StatusCreated, user); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-}
+const userParamCtx userKey = "userParam"
+const userAuthCtx userKey = "userAuth"
 
 // @Summary		Get a user by ID
 // @Description	Get a user by their ID
@@ -71,11 +25,12 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 // @Failure		400		{object}	error
 // @Failure		404		{object}	error
 // @Failure		500		{object}	error
-// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/users/{userId} [get]
 func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := getUserFromCtx(r.Context())
+	ctx := r.Context()
+	user := app.getParamUserFromCtx(ctx)
 
 	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)
@@ -92,19 +47,17 @@ func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure		404	{object}	error
 // @Failure		409	{object}	error
 // @Failure		500	{object}	error
-// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/users/{userId}/follow [put]
 func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	targetUser := getUserFromCtx(ctx)
-
-	// TODO: get this users from auth later
-	var followerUser uint32 = 1
+	targetUser := app.getParamUserFromCtx(ctx)
+	followerUser := app.getAuthUserFromCtx(ctx)
 
 	followAction := &model.FollowAction{
 		TargetUserId: targetUser.Id,
-		SenderUserId: followerUser,
+		SenderUserId: followerUser.Id,
 	}
 
 	err := app.Store.Followers.Follow(ctx, followAction)
@@ -136,19 +89,17 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 // @Failure		400	{object}	error
 // @Failure		404	{object}	error
 // @Failure		500	{object}	error
-// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/users/{userId}/unfollow [put]
 func (app *Application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	targetUser := getUserFromCtx(ctx)
-
-	// TODO: get this users from auth later
-	var unfollowerUser uint32 = 1
+	targetUser := app.getParamUserFromCtx(ctx)
+	unfollowerUser := app.getAuthUserFromCtx(ctx)
 
 	followAction := &model.FollowAction{
 		TargetUserId: targetUser.Id,
-		SenderUserId: unfollowerUser,
+		SenderUserId: unfollowerUser.Id,
 	}
 
 	err := app.Store.Followers.Unfollow(ctx, followAction)
@@ -192,12 +143,17 @@ func (app *Application) userContextMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
-		ctx = context.WithValue(ctx, userCtx, user)
+		ctx = context.WithValue(ctx, userParamCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func getUserFromCtx(ctx context.Context) *model.User {
-	user, _ := ctx.Value(userCtx).(*model.User)
+func (app *Application) getParamUserFromCtx(ctx context.Context) *model.User {
+	user, _ := ctx.Value(userParamCtx).(*model.User)
+	return user
+}
+
+func (app *Application) getAuthUserFromCtx(ctx context.Context) *model.User {
+	user, _ := ctx.Value(userAuthCtx).(*model.User)
 	return user
 }

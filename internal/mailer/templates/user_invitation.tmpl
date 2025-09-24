@@ -1,0 +1,22 @@
+{{define "subject"}} Finish setting up your account with Gopher Social {{end}}
+
+{{define "body"}}
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+    <body>
+        <p>Hi {{.Username}},</p>
+        <p>You've been invited to join Gopher Social! Click the link below to finish setting up your account:</p>
+        <p><a href="{{.ActivationURL}}">{{.ActivationURL}}</a></p>
+        <p>If you want to activate your account manually, copy and paste the code from the link above</p>
+        <p>If you did not expect this invitation, you can ignore this email.</p>
+        <p>Best regards,<br>The Gopher Social Team</p>
+    </body>
+</html>
+
+{{end}}

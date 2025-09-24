@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
@@ -18,19 +19,25 @@ const (
 	FOLLOWER_COUNT = 200
 )
 
-func Seed(store store.Storage) error {
+func Seed(store store.Storage, db *sql.DB) error {
 	ctx := context.Background()
 
+	// Generate users
 	log.Printf("seeding %d users", USER_COUNT)
 	users := generateUsers(USER_COUNT)
+
+	// Use a transaction to ensure all users are created successfully
+	tx, _ := db.BeginTx(ctx, nil)
 	for _, user := range users {
-		if err := store.Users.Create(ctx, user); err != nil {
+		if err := store.Users.Create(ctx, tx, user); err != nil {
+			_ = tx.Rollback()
 			log.Printf("failed to create user: %v", err)
 			return err
 		}
 
 		fmt.Printf("Seeded user: %+v\n", user)
 	}
+	tx.Commit()
 	log.Print("seeded users correctly")
 
 	log.Printf("seeding %d posts into users", POST_COUNT)
@@ -81,7 +88,6 @@ func generateUsers(count int) []*model.User {
 		users[i] = &model.User{
 			Username: generateRandomString(8),
 			Email:    generateRandomEmail(),
-			Password: "password123",
 		}
 	}
 	return users

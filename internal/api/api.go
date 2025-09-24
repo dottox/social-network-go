@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/dottox/social/docs"
+	"github.com/dottox/social/internal/auth"
 	"github.com/dottox/social/internal/db"
+	"github.com/dottox/social/internal/mailer"
 	"github.com/dottox/social/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,18 +17,49 @@ import (
 )
 
 type Application struct {
-	Config Config
-	Store  store.Storage
-	Logger *zap.SugaredLogger
+	Config        Config
+	Store         store.Storage
+	Logger        *zap.SugaredLogger
+	Mailer        mailer.Client
+	Authenticator auth.Authenticator
 }
 
 type Config struct {
-	Protocol string
-	Addr     string
-	Port     string
-	Env      string
-	Version  string
-	DB       db.DBConfig
+	Protocol    string
+	Addr        string
+	Port        string
+	FrontendURL string
+	Env         string
+	Version     string
+	Mail        MailConfig
+	DB          db.DBConfig
+	Auth        AuthConfig
+}
+
+type AuthConfig struct {
+	Basic BasicConfig
+	Token TokenConfig
+}
+
+type BasicConfig struct {
+	Username string
+	Password string
+}
+
+type TokenConfig struct {
+	Secret string
+	Exp    time.Duration
+	Iss    string
+}
+
+type MailConfig struct {
+	SendGrid  SendGridConfig
+	Exp       time.Duration
+	FromEmail string
+}
+
+type SendGridConfig struct {
+	APIKey string
 }
 
 // Mount functions allow the app to create their router
@@ -51,9 +84,10 @@ func (app *Application) Mount() http.Handler {
 
 	// Define routes, you can have subroutes
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
 
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postId}", func(r chi.Router) {
@@ -71,6 +105,8 @@ func (app *Application) Mount() http.Handler {
 		})
 
 		r.Route("/users", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
+
 			r.Route("/{userId}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 
@@ -82,6 +118,12 @@ func (app *Application) Mount() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Get("/feed", app.getUserFeedHandler)
 			})
+		})
+
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.getTokenHandler)
+			r.Put("/user/activate", app.activateUserHandler)
 		})
 	})
 

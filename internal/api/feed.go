@@ -21,7 +21,7 @@ import (
 // @Success		200		{array}		model.Post
 // @Failure		400		{object}	error
 // @Failure		500		{object}	error
-// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/users/feed [get]
 func (app *Application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -48,9 +48,10 @@ func (app *Application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// For now, we are using a hardcoded user ID.
-	// TODO: Get this from the authenticated user context later.
-	feed, err := app.Store.Posts.GetUserFeed(ctx, 2, fq)
+	// Get the authenticated user from the context
+	user := app.getAuthUserFromCtx(ctx)
+
+	feed, err := app.Store.Posts.GetUserFeed(ctx, user.Id, fq)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

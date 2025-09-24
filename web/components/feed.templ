@@ -1,0 +1,20 @@
+package components
+
+import "github.com/dottox/social/internal/model"
+import "strings"
+
+templ Feed(posts []*model.Post) {
+    <div>
+        <h1>Feed</h1>
+        <ul>
+            for _, post := range posts {
+                <li>
+                    <h2>{ post.Title }</h2>
+                    <p> Tags: { strings.Join(post.Tags, ", ") } </p>
+                    <p>{ post.Content }</p>
+                    <p>Created at: { post.CreatedAt }</p>
+                </li>
+            }
+        </ul>
+    </div>
+}

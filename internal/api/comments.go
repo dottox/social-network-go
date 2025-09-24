@@ -23,9 +23,11 @@ import (
 //	@Failure		400		{object}	error
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
 //	@Router			/posts/{postId}/comments [post]
 func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
 
 	// Validate the postId param
 	postIdParam := chi.URLParam(r, "postId")
@@ -50,16 +52,15 @@ func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Get the auth user from context
+	user := app.getAuthUserFromCtx(ctx)
+
 	// Create the new comment if the payload had no errors
 	comment := &model.Comment{
 		Content: payload.Content,
 		PostId:  uint32(postId),
-		// TODO: Change this after auth
-		UserId: 1,
+		UserId:  user.Id,
 	}
-
-	// Get the request context
-	ctx := r.Context()
 
 	// Create the new comment in the repository
 	// Basically inserting in the database
@@ -88,7 +89,7 @@ func (app *Application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 //	@Failure		400		{object}	error
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
-//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
 //	@Router			/posts/{postId}/comments [get]
 func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.Request) {
 

@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	ErrResourceNotFound      = errors.New("resource not found")
-	ErrResourceAlreadyExists = errors.New("resource already exists")
-	QueryTimeoutDuration     = 5 * time.Second
+	ErrUsersDuplicateEmail    = errors.New("user with this email already exists")
+	ErrUsersDuplicateUsername = errors.New("user with this username already exists")
+	ErrResourceNotFound       = errors.New("resource not found")
+	ErrResourceAlreadyExists  = errors.New("resource already exists")
+	QueryTimeoutDuration      = 5 * time.Second
 )
 
 type Storage struct {
@@ -24,8 +26,12 @@ type Storage struct {
 		GetUserFeed(context.Context, uint32, PaginatedFeedQuery) ([]*model.Post, error)
 	}
 	Users interface {
-		Create(context.Context, *model.User) error
+		Create(context.Context, *sql.Tx, *model.User) error
 		GetById(context.Context, uint32) (*model.User, error)
+		GetByEmail(context.Context, string) (*model.User, error)
+		DeleteById(context.Context, uint32) error
+		CreateAndInvite(context.Context, *model.User, string, time.Duration) error
+		Activate(context.Context, string) error
 	}
 	Comments interface {
 		Create(context.Context, *model.Comment) error

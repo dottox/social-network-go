@@ -31,3 +31,17 @@ func (app *Application) resourceAlreadyExists(w http.ResponseWriter, r *http.Req
 
 	writeJSONError(w, http.StatusConflict, "resource already exists")
 }
+
+func (app *Application) unauthorizedError(w http.ResponseWriter, r *http.Request, err error) {
+	app.logError("unauthorized", r, err)
+
+	writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
+
+func (app *Application) unauthorizedBasicError(w http.ResponseWriter, r *http.Request, err error) {
+	app.logError("unauthorized", r, err)
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+
+	writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
