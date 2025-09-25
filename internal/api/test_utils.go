@@ -13,7 +13,7 @@ import (
 func newTestApplication(t *testing.T) *Application {
 	t.Helper()
 
-	logger := zap.Must(zap.NewProduction()).Sugar()
+	logger := zap.NewNop().Sugar()
 	mockStore := store.NewMockStore()
 	mockAuthenticator := auth.NewMockAuthenticator()
 
