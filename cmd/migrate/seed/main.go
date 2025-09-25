@@ -14,7 +14,12 @@ func main() {
 		log.Fatal(err)
 	}
 	dbAddr := env.GetString("DB_ADDR", "")
-	conn, err := db.New(db.DBConfig{dbAddr, 15, 15, "15m"})
+	conn, err := db.New(db.DBConfig{
+		Addr:         dbAddr,
+		MaxOpenConns: 15,
+		MaxIdleConns: 15,
+		MaxIdleTime:  "15m",
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
