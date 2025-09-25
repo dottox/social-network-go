@@ -70,7 +70,7 @@ func Seed(store store.Storage, db *sql.DB) error {
 	for _, followAction := range followActions {
 		if err := store.Followers.Follow(ctx, followAction); err != nil {
 			log.Printf("failed to follow: %v", err)
-			return err
+			continue
 		}
 
 		fmt.Printf("Seeded follower: %+v\n", followAction)

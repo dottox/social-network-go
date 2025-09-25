@@ -15,7 +15,8 @@ type UserStore struct {
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *model.User) error {
 	query := `
 		INSERT INTO users (username, email, password)
-		VALUES ($1, $2, $3) RETURNING id, created_at
+		VALUES ($1, $2, $3) 
+		RETURNING id, created_at
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -47,9 +48,10 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *model.User) er
 
 func (s *UserStore) GetById(ctx context.Context, id uint32) (*model.User, error) {
 	query := `
-		SELECT id, username, email, password, created_at, is_active
-		FROM users
-		WHERE id = $1 AND is_active = true
+		SELECT u.id, u.username, u.email, u.password, u.created_at, u.is_active, r.*
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1 AND u.is_active = true
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -63,6 +65,10 @@ func (s *UserStore) GetById(ctx context.Context, id uint32) (*model.User, error)
 		&user.Password.Hash,
 		&user.CreatedAt,
 		&user.IsActive,
+		&user.Role.Id,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
 	)
 	if err != nil {
 		switch err {
@@ -78,9 +84,10 @@ func (s *UserStore) GetById(ctx context.Context, id uint32) (*model.User, error)
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
-		SELECT id, username, email, password, created_at
-		FROM users
-		WHERE email = $1 AND is_active = true
+		SELECT u.id, u.username, u.email, u.password, u.created_at, u.is_active, r.*
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.email = $1 AND u.is_active = true
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -93,6 +100,11 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*model.User, 
 		&user.Email,
 		&user.Password.Hash,
 		&user.CreatedAt,
+		&user.IsActive,
+		&user.Role.Id,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
 	)
 	if err != nil {
 		switch err {

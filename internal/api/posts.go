@@ -51,13 +51,14 @@ func (app *Application) createPostHandler(w http.ResponseWriter, r *http.Request
 		payload.Tags = []string{}
 	}
 
+	user := app.getAuthUserFromCtx(ctx)
+
 	// Create the new post if the payload had no errors
 	post := &model.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		// Change after auth
-		UserId: 24,
+		UserId:  user.Id,
 	}
 
 	// Create the new post in the repository
@@ -93,7 +94,7 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the post from the context
 	ctx := r.Context()
-	post := getPostFromCtx(ctx)
+	post := app.getPostFromCtx(ctx)
 
 	// Write the post in JSON for the response
 	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
@@ -121,7 +122,7 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 
 	// Get the request context
 	ctx := r.Context()
-	post := getPostFromCtx(ctx)
+	post := app.getPostFromCtx(ctx)
 
 	// Took the payload from the request body
 	// The payload will be a minimal Post model
@@ -188,7 +189,7 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 
 	// Get the request context
 	ctx := r.Context()
-	post := getPostFromCtx(ctx)
+	post := app.getPostFromCtx(ctx)
 
 	// Delete the Post by Id in the repository
 	err := app.Store.Posts.DeleteById(ctx, post.Id)
@@ -241,7 +242,7 @@ func (app *Application) postsContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getPostFromCtx(ctx context.Context) *model.Post {
+func (app *Application) getPostFromCtx(ctx context.Context) *model.Post {
 	post, _ := ctx.Value(postCtx).(*model.Post)
 	return post
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"expvar"
+	"runtime"
 	"time"
 
 	"github.com/dottox/social/internal/api"
@@ -8,6 +10,7 @@ import (
 	"github.com/dottox/social/internal/db"
 	"github.com/dottox/social/internal/env"
 	"github.com/dottox/social/internal/mailer"
+	"github.com/dottox/social/internal/ratelimiter"
 	"github.com/dottox/social/internal/store"
 	"github.com/dottox/social/web"
 	"go.uber.org/zap"
@@ -69,6 +72,11 @@ func main() {
 				Iss:    "gophersocial",
 			},
 		},
+		RateLimiter: ratelimiter.Config{
+			RequestsPerTimeFrame: 50,
+			TimeFrame:            time.Minute,
+			Enabled:              true,
+		},
 	}
 
 	// Create a new DB connection with the DBConfig
@@ -94,6 +102,11 @@ func main() {
 		cfg.Auth.Token.Iss,
 	)
 
+	rateLimiter := ratelimiter.NewFixedWindowRateLimiter(
+		cfg.RateLimiter.RequestsPerTimeFrame,
+		cfg.RateLimiter.TimeFrame,
+	)
+
 	// Create a new application
 	app := &api.Application{
 		Config:        cfg,
@@ -101,7 +114,17 @@ func main() {
 		Logger:        logger,
 		Mailer:        mailer,
 		Authenticator: jwtAuthenticator,
+		RateLimiter:   rateLimiter,
 	}
+
+	// Publish some metrics to /v1/metrics
+	expvar.NewString("version").Set(cfg.Version)
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
 
 	// Create a new router, in this case we are using Chi
 	// We're gonna run the app with the router

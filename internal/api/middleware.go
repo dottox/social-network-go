@@ -8,8 +8,37 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dottox/social/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+func (app *Application) checkPostOwnership(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		user := app.getAuthUserFromCtx(ctx)
+		post := app.getPostFromCtx(ctx)
+
+		// If the user is the owner of the post, allow
+		if post.UserId == user.Id {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// If not the owner, check if they have the required role
+		allowed, err := app.checkRolePrecedence(ctx, user, requiredRole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		if !allowed {
+			app.forbiddenError(w, r, fmt.Errorf("insufficient permissions to modify this resource"))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
 
 func (app *Application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -96,4 +125,25 @@ func (app *Application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (app *Application) checkRolePrecedence(ctx context.Context, user *model.User, roleName string) (bool, error) {
+	role, err := app.Store.Roles.GetByName(ctx, roleName)
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role.Level >= role.Level, nil
+}
+
+func (app *Application) RateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if app.Config.RateLimiter.Enabled {
+			if allow, retryAfter := app.RateLimiter.Allow(r.RemoteAddr); !allow {
+				app.rateLimitExceededError(w, r, retryAfter.String())
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }

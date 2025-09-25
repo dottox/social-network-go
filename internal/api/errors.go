@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -44,4 +45,18 @@ func (app *Application) unauthorizedBasicError(w http.ResponseWriter, r *http.Re
 	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 
 	writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
+
+func (app *Application) forbiddenError(w http.ResponseWriter, r *http.Request, err error) {
+	app.logError("forbidden", r, err)
+
+	writeJSONError(w, http.StatusForbidden, "forbidden")
+}
+
+func (app *Application) rateLimitExceededError(w http.ResponseWriter, r *http.Request, retryAfterText string) {
+	app.logError("rate limit exceeded", r, fmt.Errorf("rate limit exceeded"))
+
+	w.Header().Set("Retry-After", retryAfterText)
+
+	writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded, retry after: "+retryAfterText)
 }

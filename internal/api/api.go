@@ -1,14 +1,21 @@
 package api
 
 import (
+	"context"
+	"errors"
+	"expvar"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/dottox/social/docs"
 	"github.com/dottox/social/internal/auth"
 	"github.com/dottox/social/internal/db"
 	"github.com/dottox/social/internal/mailer"
+	"github.com/dottox/social/internal/ratelimiter"
 	"github.com/dottox/social/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,6 +29,7 @@ type Application struct {
 	Logger        *zap.SugaredLogger
 	Mailer        mailer.Client
 	Authenticator auth.Authenticator
+	RateLimiter   ratelimiter.Limiter
 }
 
 type Config struct {
@@ -34,6 +42,7 @@ type Config struct {
 	Mail        MailConfig
 	DB          db.DBConfig
 	Auth        AuthConfig
+	RateLimiter ratelimiter.Config
 }
 
 type AuthConfig struct {
@@ -76,6 +85,7 @@ func (app *Application) Mount() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(app.RateLimitMiddleware)
 
 	// Timeout for the middlewares
 	r.Use(middleware.Timeout(60 * time.Second))
@@ -84,7 +94,8 @@ func (app *Application) Mount() http.Handler {
 
 	// Define routes, you can have subroutes
 	r.Route("/v1", func(r chi.Router) {
-		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
+		r.Get("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/metrics", expvar.Handler().ServeHTTP)
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
@@ -94,8 +105,8 @@ func (app *Application) Mount() http.Handler {
 				r.Use(app.postsContextMiddleware)
 
 				r.Get("/", app.getPostHandler)
-				r.Patch("/", app.updatePostHandler)
-				r.Delete("/", app.deletePostHandler)
+				r.Patch("/", app.checkPostOwnership("moderator", app.updatePostHandler))
+				r.Delete("/", app.checkPostOwnership("admin", app.deletePostHandler))
 
 				r.Route("/comments", func(r chi.Router) {
 					r.Post("/", app.createCommentHandler)
@@ -147,8 +158,34 @@ func (app *Application) Run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
+	shutdown := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		app.Logger.Infow("Signal caught", "signal", s.String())
+
+		shutdown <- srv.Shutdown(ctx)
+	}()
+
 	app.Logger.Infow("starting server", "protocol", app.Config.Protocol, "addr", srv.Addr, "env", app.Config.Env)
 
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
 	// start the server
-	return srv.ListenAndServe()
+	app.Logger.Infow("server has stopped", "addr", app.Config.Addr, "env", app.Config.Env)
+
+	return nil
 }

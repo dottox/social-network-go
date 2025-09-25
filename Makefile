@@ -36,3 +36,7 @@ seed:
 .PHONY: gen-docs
 gen-docs:
 	@swag init -g ./main.go -d cmd,internal/api,internal/db,internal/model,internal/store,internal/env && swag fmt
+
+.PHONY: test
+test:
+	@go test -v ./...

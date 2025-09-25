@@ -9,6 +9,7 @@ type User struct {
 	Password  password `json:"-"`
 	CreatedAt string   `json:"created_at"`
 	IsActive  bool     `json:"is_active"`
+	Role      Role     `json:"role"` // 0 = user, 1 = mod, 2 = admin
 }
 
 type password struct {
