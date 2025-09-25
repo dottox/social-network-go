@@ -70,9 +70,9 @@ func (m *SendGridMailer) Send(templateFile, username, email string, data any, is
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			return nil
 		} else {
-			return fmt.Errorf("Failed to sent email to %v with status code %d", email, response.StatusCode)
+			return fmt.Errorf("failed to sent email to %v with status code %d", email, response.StatusCode)
 		}
 	}
 
-	return fmt.Errorf("Failed to send email to %v after %d attempts", email, MAX_RETRIES)
+	return fmt.Errorf("failed to send email to %v after %d attempts", email, MAX_RETRIES)
 }
