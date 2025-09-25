@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0-alpha](https://github.com/dottox/social-network-go/compare/v0.4.0-alpha...v0.5.0-alpha) (2025-09-25)
+
+
+### Features
+
+* updates-api-version workflow ([8b009ba](https://github.com/dottox/social-network-go/commit/8b009baf2cba7b8d7867a848b1428b411a6594a0))
+
 ## [0.4.0-alpha](https://github.com/dottox/social-network-go/compare/v0.3.0-alpha...v0.4.0-alpha) (2025-09-25)
 
 
