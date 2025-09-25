@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const version = "0.4.0"
+
 //	@title			GopherSocial API
 //	@description	API for Gopher Social
 
@@ -52,7 +54,7 @@ func main() {
 		Port:        env.GetString("PORT", ":8080"),
 		FrontendURL: env.GetString("FRONTEND_URL", "http://localhost:8080"),
 		Env:         env.GetString("ENV", "development"),
-		Version:     env.GetString("VERSION", "x.x.x"),
+		Version:     version,
 		DB:          dbCfg,
 		Mail: api.MailConfig{
 			Exp:       time.Hour * 24, // 24 hours

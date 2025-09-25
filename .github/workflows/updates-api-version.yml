@@ -20,15 +20,10 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Extracted version: $VERSION"
 
-      - name: Update version in .env
+      - name: Update version in cmd/main.go
         run: |
-          if [ -f .env ]; then
-            sed -i "s/^VERSION=.*/VERSION=$VERSION/" .env
-            echo ".env file updated with VERSION=$VERSION"
-          else
-            echo ".env file not found, creating a new one."
-            echo "API_VERSION=$VERSION" > .env
-          fi
+          sed -i "s/const version = \".*\"/const version = \"$VERSION\"/" cmd/main.go
+          echo "Updated cmd/main.go with version $VERSION"
 
       - name: Commit and push changes
         run: |
