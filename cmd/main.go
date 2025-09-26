@@ -52,7 +52,7 @@ func main() {
 		Protocol:    env.GetString("PROTOCOL", "http"),
 		Addr:        env.GetString("ADDR", "localhost"),
 		Port:        env.GetString("PORT", ":8080"),
-		FrontendURL: env.GetString("FRONTEND_URL", "http://localhost:8080"),
+		FrontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		Env:         env.GetString("ENV", "development"),
 		Version:     version,
 		DB:          dbCfg,
