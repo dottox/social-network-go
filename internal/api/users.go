@@ -94,7 +94,9 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 func (app *Application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
+	// The target user is the param user
 	targetUser := app.getParamUserFromCtx(ctx)
+	// The unfollower is the authenticated user
 	unfollowerUser := app.getAuthUserFromCtx(ctx)
 
 	followAction := &model.FollowAction{
@@ -120,17 +122,20 @@ func (app *Application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// Middleware to store the user that is called from a URL parameter {userId}
 func (app *Application) userContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
 
+		// Parse the user Id
 		userId, err := strconv.ParseUint(chi.URLParam(r, "userId"), 10, 32)
 		if err != nil {
 			app.badRequestError(w, r, err)
 			return
 		}
 
+		// Get the User from the store
 		user, err := app.Store.Users.GetById(ctx, uint32(userId))
 		if err != nil {
 			switch {
@@ -143,6 +148,7 @@ func (app *Application) userContextMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
+		// Create a new context and serve it to the next middleware
 		ctx = context.WithValue(ctx, userParamCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
