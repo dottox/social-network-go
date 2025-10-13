@@ -36,7 +36,7 @@ func main() {
 	env.LoadEnvs()
 
 	// Creates a new zap logger
-	logger := zap.Must(zap.NewProduction()).Sugar()
+	logger := zap.Must(zap.NewDevelopment()).Sugar()
 	defer logger.Sync()
 
 	// Creates the DBConfiguration for the connection pool
